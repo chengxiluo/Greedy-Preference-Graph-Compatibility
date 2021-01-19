@@ -13,15 +13,15 @@ import argparse
 class graph():
     def __init__(self):
         self.indict = {}
-        self.outdict = {}    
-        self.nodes = set()   
-        
+        self.outdict = {}
+        self.nodes = set()
+
     def add_edge(self, f, t):
         self.outdict[f] = self.outdict.setdefault(f, nodeInfo()).add(t)
         self.indict[t] = self.indict.setdefault(t, nodeInfo()).add(f)
         self.nodes.add(f)
         self.nodes.add(t)
-        return self        
+        return self
 
     def remove_node(self, node):
         for in_node in self.getInNodes(node):
@@ -55,19 +55,19 @@ class graph():
         if node not in self.nodes:
             raise ValueError()
         if node not in self.indict:
-            return  []     
+            return  []
         return self.indict[node].nodes
 
     def getOutNodes(self, node):
         if node not in self.nodes:
             raise ValueError()
         if node not in self.outdict:
-            return  []     
-        return self.outdict[node].nodes    
+            return  []
+        return self.outdict[node].nodes
 
-    def getMostDeltaDegreeNodes(self): 
+    def getMostDeltaDegreeNodes(self):
         max = float('-inf')
-        nodes = []       
+        nodes = []
         for n in self.nodes:
             delta = self.getOutDegree(n) - self.getInDegree(n)
             if delta > max:
@@ -122,48 +122,37 @@ class nodeInfo():
     def degree(self):
         return self.degree
 
-
-def rank_source(sources, actual_rank):
+def rank_node(sources, actual_rank, sink = False):
     #Sort sources or vertex by highest actual ranking
-    node_rank = {}
-    for i in sources:
-        if i not in actual_rank:
-            node_rank[i] = float('-INF')
-        else:
-            node_rank[i] = actual_rank.index(i)
-    return [key for key,value in sorted(node_rank.items(), key = lambda item:item[1])]
-
-def rank_sink(sources, actual_rank):
     #Sort sink by lowest actual ranking or non-exist
     node_rank = {}
     for i in sources:
         if i not in actual_rank:
             node_rank[i] = float('INF')
         else:
-            node_rank[i] = actual_rank.index(i)
-    return [key for key,value in sorted(node_rank.items(), key = lambda item:item[1], reverse = True)]
-
+            node_rank[i] = actual_rank[i]
+    return [key for key,value in sorted(node_rank.items(), key = lambda item:item[1], reverse = sink)]
 
 def greedy_fas(judgements, actual_rank):
     s1 = []
     s2 = []
     while judgements.nodes != set():
         sinks = judgements.findSinks()
-        sinks = rank_sink(sinks, actual_rank)
+        sinks = rank_node(sinks, actual_rank, sink = True)
         if sinks != []:
             for i in sinks:
-                s2.insert(0, sinks)
+                s2.insert(0, i)
                 judgements.remove_node(i)
 
         sources = judgements.findSources()
-        sources = rank_source(sources, actual_rank)
+        sources = rank_node(sources, actual_rank)
         if sources != []:
             for j in sources:
                 s1.append(j)
                 judgements.remove_node(j)
 
         vertexs = judgements.getMostDeltaDegreeNodes()
-        vertexs = rank_source(vertexs, actual_rank)
+        vertexs = rank_node(vertexs, actual_rank)
         if vertexs != []:
             for k in vertexs:
                 s1.append(k)
@@ -178,16 +167,16 @@ def open_actual_rank(filename):
             jObj = line.strip().split(' ')
             currentTopic = jObj[0]
             if currentTopic in actual_rank:
-                actual_rank[currentTopic].append(jObj[2])
+                actual_rank[currentTopic][jObj[2]]=int(jObj[3])
             else:
-                actual_rank[currentTopic] = []
-                actual_rank[currentTopic].append(jObj[2])
+                actual_rank[currentTopic] = {}
+                actual_rank[currentTopic][jObj[2]]=int(jObj[3])
     return actual_rank
 
 def write_csvfile(filename, content_dict):
     with open(filename, 'w', newline='') as csvfile:
         writer = csv.writer(csvfile, delimiter=' ')
-        
+
         for topic in content_dict:
             num = 0
             for doc in content_dict[topic]:
@@ -203,7 +192,7 @@ def readQPrefs(file_name):
     return jud
 
 
-if __name__ == "__main__":    
+if __name__ == "__main__":
     parser = argparse.ArgumentParser(
     description='Ranking by greedy feedback arc set')
     parser.add_argument('prefs', type=str, help='Preferences judgments')
@@ -214,36 +203,23 @@ if __name__ == "__main__":
     actualrank_filename = args.run
     #hiQ_filename = 'hiQ.qprefs'
     #actualrank_filename = 'MSINT-D-J-1'
-    
+
     print('Start reading hiQ file:', hiQ_filename)
-    judgements_graph = readQPrefs(hiQ_filename) 
-    
-    actual_rank = {}
+    judgements_graph = readQPrefs(hiQ_filename)
+
     currentTopic = ''
     print('Start reading actual ranking file:', actualrank_filename)
-    with open(actualrank_filename) as f:
-        for line in f:
-            jObj = line.strip().split(' ')
-            currentTopic = jObj[0]
-            if currentTopic in actual_rank:
-                actual_rank[currentTopic].append(jObj[2])
-            else:
-                actual_rank[currentTopic] = []
-                actual_rank[currentTopic].append(jObj[2])
-    
+    actual_rank = open_actual_rank(actualrank_filename)
+
+
     fas_rank = {}
     print('Start computing ideal ranking.')
-    for topic in judgements_graph:    
+    for topic in judgements_graph:
         rank = greedy_fas(judgements_graph[topic], actual_rank[topic])
         fas_rank[topic] = rank
 
 
     #Write ideal ranking file
-    with open(actualrank_filename+'_idealrank', 'w', newline='') as csvfile:
-        writer = csv.writer(csvfile, delimiter=' ')
-        for topic in fas_rank:
-            num = 0
-            for doc in fas_rank[topic]:
-                num+=1
-                writer.writerow([topic, 0, doc, num])
+    write_csvfile(actualrank_filename+'_idealrank', fas_rank)
+
     print('Finish writing ideal ranking file:', actualrank_filename+'_idealrank')
