@@ -9,6 +9,7 @@ import random
 import math
 import csv
 import argparse
+import re
 
 class graph():
     def __init__(self):
@@ -164,7 +165,7 @@ def open_actual_rank(filename):
     currentTopic = ''
     with open(filename) as f:
         for line in f:
-            jObj = line.strip().split(' ')
+            jObj = re.split("\s|(?<!\d)[,.](?!\d)", line.strip())
             currentTopic = jObj[0]
             if currentTopic in actual_rank:
                 actual_rank[currentTopic][jObj[2]]=int(jObj[3])
@@ -187,22 +188,22 @@ def readQPrefs(file_name):
     jud = {}
     with open(file_name) as f:
         for line in f:
-            jObj = line.strip().split(' ')
+            jObj = re.split("\s|(?<!\d)[,.](?!\d)", line.strip())
             jud[jObj[0]] = jud.setdefault(jObj[0], graph()).add_edge(jObj[1], jObj[2])
     return jud
 
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(
+    '''parser = argparse.ArgumentParser(
     description='Ranking by greedy feedback arc set')
     parser.add_argument('prefs', type=str, help='Preferences judgments')
     parser.add_argument('run', type=str, help='Actual search results')
     args = parser.parse_args()
 
     hiQ_filename = args.prefs
-    actualrank_filename = args.run
-    #hiQ_filename = 'hiQ.qprefs'
-    #actualrank_filename = 'MSINT-D-J-1'
+    actualrank_filename = args.run'''
+    hiQ_filename = 'waterloo.pref'
+    actualrank_filename = 'input.clacBase'
 
     print('Start reading hiQ file:', hiQ_filename)
     judgements_graph = readQPrefs(hiQ_filename)
