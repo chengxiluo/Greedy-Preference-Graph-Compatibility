@@ -194,16 +194,17 @@ def readQPrefs(file_name):
 
 
 if __name__ == "__main__":
-    '''parser = argparse.ArgumentParser(
+    parser = argparse.ArgumentParser(
     description='Ranking by greedy feedback arc set')
     parser.add_argument('prefs', type=str, help='Preferences judgments')
     parser.add_argument('run', type=str, help='Actual search results')
     args = parser.parse_args()
 
     hiQ_filename = args.prefs
-    actualrank_filename = args.run'''
-    hiQ_filename = 'waterloo.pref'
-    actualrank_filename = 'input.clacBase'
+    actualrank_filename = args.run
+    
+    #hiQ_filename = 'waterloo.pref'
+    #actualrank_filename = 'input.clacBase'
 
     print('Start reading hiQ file:', hiQ_filename)
     judgements_graph = readQPrefs(hiQ_filename)
@@ -221,6 +222,6 @@ if __name__ == "__main__":
 
 
     #Write ideal ranking file
-    write_csvfile(actualrank_filename+'_idealrank', fas_rank)
+    write_csvfile(actualrank_filename+'_greedyfas_idealrank', fas_rank)
 
     print('Finish writing ideal ranking file:', actualrank_filename+'_idealrank')
