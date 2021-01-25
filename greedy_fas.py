@@ -1,9 +1,28 @@
-# -*- coding: utf-8 -*-
+#!/usr/bin/env python3
 """
 Created on Fri Jan 15 20:12:09 2021
 
 @author: Chengxi Luo
 """
+
+DEPTH = 1000
+
+def rbo(run, ideal, p):
+    run_set = set()
+    ideal_set = set()
+
+    score = 0.0
+    normalizer = 0.0
+    weight = 1.0
+    for i in range(DEPTH):
+        if i < len(run):
+            run_set.add(run[i])
+        if i < len(ideal):
+            ideal_set.add(ideal[i])
+        score += weight*len(ideal_set.intersection(run_set))/(i + 1)
+        normalizer += weight
+        weight *= p
+    return score/normalizer
 
 import random
 import math
@@ -202,26 +221,37 @@ if __name__ == "__main__":
 
     hiQ_filename = args.prefs
     actualrank_filename = args.run
-    
     #hiQ_filename = 'waterloo.pref'
     #actualrank_filename = 'input.clacBase'
 
-    print('Start reading hiQ file:', hiQ_filename)
+    #print('Start reading hiQ file:', hiQ_filename)
     judgements_graph = readQPrefs(hiQ_filename)
 
     currentTopic = ''
-    print('Start reading actual ranking file:', actualrank_filename)
+    #print('Start reading actual ranking file:', actualrank_filename)
     actual_rank = open_actual_rank(actualrank_filename)
 
 
+    print('runid,topic,compatibility')
+    total = 0.0
+    N = 0
     fas_rank = {}
-    print('Start computing ideal ranking.')
+    #print('Start computing ideal ranking.')
     for topic in judgements_graph:
         rank = greedy_fas(judgements_graph[topic], actual_rank[topic])
         fas_rank[topic] = rank
-
+        actual = list(actual_rank[topic].keys())
+        actual.sort(key=lambda docno: actual_rank[topic][docno])
+        score = rbo(rank, actual, 0.80)
+        print(actualrank_filename, topic, score, sep=',')
+        total += score
+        N += 1
+    if N > 0:
+        print(actualrank_filename, 'amean', total/N, sep=',')
+    else:
+        print(actualrank_filename, 'amean, 0.0')
 
     #Write ideal ranking file
-    write_csvfile(actualrank_filename+'_greedyfas_idealrank', fas_rank)
+    #write_csvfile(actualrank_filename+'_idealrank', fas_rank)
 
-    print('Finish writing ideal ranking file:', actualrank_filename+'_idealrank')
+    #print('Finish writing ideal ranking file:', actualrank_filename+'_idealrank')
