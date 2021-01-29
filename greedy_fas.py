@@ -151,32 +151,29 @@ def rank_node(sources, actual_rank, sink = False):
             node_rank[i] = float('INF')
         else:
             node_rank[i] = actual_rank[i]
-    return [key for key,value in sorted(node_rank.items(), key = lambda item:item[1], reverse = sink)]
+    return sorted(node_rank.items(), key = lambda item:item[1], reverse = sink)[0][0]
 
 def greedy_fas(judgements, actual_rank):
     s1 = []
     s2 = []
     while judgements.nodes != set():
-        sinks = judgements.findSinks()
-        sinks = rank_node(sinks, actual_rank, sink = True)
-        if sinks != []:
-            for i in sinks:
-                s2.insert(0, i)
-                judgements.remove_node(i)
+        while judgements.findSinks() != []:
+            sinks = judgements.findSinks()
+            u = rank_node(sinks, actual_rank, sink = True)
+            s2.insert(0, u)
+            judgements.remove_node(u)
 
-        sources = judgements.findSources()
-        sources = rank_node(sources, actual_rank)
-        if sources != []:
-            for j in sources:
-                s1.append(j)
-                judgements.remove_node(j)
+        while judgements.findSources() != []:
+            sources = judgements.findSources()
+            u = rank_node(sources, actual_rank)
+            s1.append(u)
+            judgements.remove_node(u)
 
         vertexs = judgements.getMostDeltaDegreeNodes()
-        vertexs = rank_node(vertexs, actual_rank)
         if vertexs != []:
-            for k in vertexs:
-                s1.append(k)
-                judgements.remove_node(k)
+            u = rank_node(vertexs, actual_rank)
+            s1.append(u)
+            judgements.remove_node(u)
     return s1+s2
 
 def open_actual_rank(filename):
@@ -221,8 +218,7 @@ if __name__ == "__main__":
 
     hiQ_filename = args.prefs
     actualrank_filename = args.run
-    #hiQ_filename = 'waterloo.pref'
-    #actualrank_filename = 'input.clacBase'
+
 
     #print('Start reading hiQ file:', hiQ_filename)
     judgements_graph = readQPrefs(hiQ_filename)
