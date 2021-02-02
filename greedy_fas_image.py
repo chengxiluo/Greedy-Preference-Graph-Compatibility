@@ -226,9 +226,14 @@ def open_image_pairs(filename):
 
     return jud
 
+def distance_from_ori(row, column):
+    if row == 0 and column == 0:
+        return 0
+    return math.sqrt(row**2+column**2)
+
 def open_image_pos(filename):
     pos = {}
-    with open(filename, encoding='utf-8', mode = 'r') as f:
+    with open(filename) as f:
         jObj = json.load(f)
         for topic, search_engines in jObj.items():
             pos[topic] = {}
@@ -239,8 +244,18 @@ def open_image_pos(filename):
                     search_engine_name = 'baidu/'
                 for image in image_pos:
                     full_name = search_engine_name + topic + '_' + image + '.jpg'
-                    pos[topic][full_name] = int(image) + 1
+                    pos[topic][full_name] = distance_from_ori(image_pos[image][0], image_pos[image][1])
     return pos
+
+def separate_rank(rank):
+    sogou = []
+    baidu = []
+    for i in rank:
+        if i[:5] == 'baidu':
+            baidu.append(i)
+        else:
+            sogou.append(i)
+    return sogou, baidu
 
 if __name__ == "__main__":
     
@@ -253,7 +268,8 @@ if __name__ == "__main__":
     hiQ_filename = args.prefs
     actualrank_filename = args.run
     
-    
+    #hiQ_filename = 'image_pairs_annotation'
+    #actualrank_filename = 'Image_position.json'    
     #print('Start reading hiQ file:', hiQ_filename)
     judgements_graph = open_image_pairs(hiQ_filename)
 
@@ -265,15 +281,28 @@ if __name__ == "__main__":
     print('runid,topic,compatibility')
     total = 0.0
     N = 0
+    topic_num = 2
     fas_rank = {}
+    
     #print('Start computing ideal ranking.')
     for topic in judgements_graph:
         rank = greedy_fas(judgements_graph[topic], actual_rank[topic])
         fas_rank[topic] = rank
+        
         actual = list(actual_rank[topic].keys())
         actual.sort(key=lambda docno: actual_rank[topic][docno])
-        score = rbo(rank, actual, 0.80)
-        print(actualrank_filename, topic, score, sep=',')
+        
+        s_rank,b_rank = separate_rank(rank)
+        s_actual,b_actual = separate_rank(actual)
+        
+        
+        score = rbo(s_rank, s_actual, 0.80)
+        print('sogou', topic_num, score, sep=',')
+        
+        score = rbo(b_rank, b_actual, 0.80)
+        print('baidu', topic_num, score, sep=',')
+        
+        topic_num += 1
         total += score
         N += 1
     if N > 0:
