@@ -10,7 +10,7 @@ python greedy_pgc.py prefs <preference-judgments> run <actual-running/ranking>
 
 ## Help
 
-If you have any problems or concerns, please contact Chengxi Luo.
+If you have any problems or concerns, please contact Chengxi Luo at chengxiluo1 at gmail dot com.
 
 ## Authors
 
